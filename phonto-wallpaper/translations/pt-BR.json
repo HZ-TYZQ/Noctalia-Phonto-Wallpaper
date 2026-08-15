@@ -1,0 +1,42 @@
+{
+  "all_outputs": "Todas as Saídas",
+  "empty": "Nenhum vídeo encontrado no diretório configurado",
+  "not_installed": "O phonto não está instalado",
+  "output": "Saída",
+  "pause": "Pausar",
+  "resume": "Retomar",
+  "settings": {
+    "allowed_cpus": {
+      "label": "CPUs Permitidas"
+    },
+    "cpu_quota": {
+      "label": "Cota de CPU"
+    },
+    "cpu_weight": {
+      "label": "Peso da CPU"
+    },
+    "extract_last_frame": {
+      "description": "Extrair automaticamente um quadro do vídeo para usar como papel de parede estático quando a reprodução estiver parada",
+      "label": "Quadro Estático de Fallback"
+    },
+    "glyph": {
+      "label": "Símbolo"
+    },
+    "memory_max": {
+      "label": "Memória Máxima"
+    },
+    "nice": {
+      "label": "Valor Nice"
+    },
+    "run_as_systemd": {
+      "description": "Executar o papel de parede em um escopo transitório do systemd para impor limites rigorosos de recursos",
+      "label": "Executar como Serviço do systemd"
+    },
+    "video_directory": {
+      "description": "Pasta verificada em busca de vídeos para papel de parede; o padrão é ~/Videos quando vazio",
+      "label": "Diretório de Vídeos"
+    }
+  },
+  "stop": "Parar",
+  "title": "Vídeo como Papel de Parede (Phonto)"
+}

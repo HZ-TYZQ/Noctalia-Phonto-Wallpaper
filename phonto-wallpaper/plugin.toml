@@ -1,0 +1,109 @@
+# Phonto video wallpaper. A headless [[service]] supervises one phonto instance
+# per output (or one instance covering all outputs). The [[panel]] is a per-output video
+# picker and the bar [[widget]] opens it. When a video is assigned to an output, the
+# service asks the host to drop its own wallpaper surface there
+# (noctalia.setWallpaperEnabled) so the phonto surface shows through; clearing the
+# video restores it.
+#
+# Requires the external `phonto` command. `ffmpeg` generates the picker thumbnails.
+
+id = "tyzq/phonto-wallpaper"
+name = "Phonto Video Wallpaper"
+version = "0.1.0"
+plugin_api = 9
+author = "tyzq"
+license = "MIT"
+dependencies = ["phonto", "ffmpeg"]
+tags = ["wallpaper", "video"]
+icon = "movie"
+description = "Video wallpapers via phonto."
+
+[[setting]]
+key = "video_directory"
+type = "folder"
+label_key = "settings.video_directory.label"
+description_key = "settings.video_directory.description"
+default = ""
+
+[[setting]]
+key = "run_as_systemd"
+type = "bool"
+label_key = "settings.run_as_systemd.label"
+description_key = "settings.run_as_systemd.description"
+default = false
+
+[[setting]]
+key = "extract_last_frame"
+type = "bool"
+label_key = "settings.extract_last_frame.label"
+description_key = "settings.extract_last_frame.description"
+default = true
+
+[[setting]]
+key = "cpu_quota"
+type = "int"
+label_key = "settings.cpu_quota.label"
+default = 0
+min = 0
+max = 1600
+step = 10
+visible_when = { key = "run_as_systemd", values = ["true"] }
+
+[[setting]]
+key = "allowed_cpus"
+type = "string"
+label_key = "settings.allowed_cpus.label"
+default = ""
+visible_when = { key = "run_as_systemd", values = ["true"] }
+
+[[setting]]
+key = "memory_max"
+type = "string"
+label_key = "settings.memory_max.label"
+default = ""
+visible_when = { key = "run_as_systemd", values = ["true"] }
+
+[[setting]]
+key = "cpu_weight"
+type = "int"
+label_key = "settings.cpu_weight.label"
+default = 0
+min = 0
+max = 10000
+step = 10
+visible_when = { key = "run_as_systemd", values = ["true"] }
+
+[[setting]]
+key = "nice"
+type = "int"
+label_key = "settings.nice.label"
+default = 0
+min = -20
+max = 19
+step = 1
+visible_when = { key = "run_as_systemd", values = ["true"] }
+
+# Headless background service: owns the phonto logic and per-output assignments.
+[[service]]
+id = "service"
+entry = "phonto_service.luau"
+
+# Per-output video picker.
+[[panel]]
+id = "picker"
+entry = "panel.luau"
+width = 920
+height = 780
+placement = "attached"
+position = "auto"
+
+# Bar tile that opens the picker.
+[[widget]]
+id = "phonto"
+entry = "widget.luau"
+
+  [[widget.setting]]
+  key = "glyph"
+  type = "glyph"
+  label_key = "settings.glyph.label"
+  default = "movie"

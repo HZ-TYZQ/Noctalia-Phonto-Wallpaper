@@ -1,0 +1,13 @@
+# Catalog for this plugin source. The per-plugin plugin.toml stays authoritative.
+
+[[plugin]]
+id = "tyzq/phonto-wallpaper"
+name = "Phonto Video Wallpaper"
+version = "0.1.0"
+author = "tyzq"
+license = "MIT"
+icon = "movie"
+description = "Video wallpapers via phonto."
+plugin_api = 9
+tags = ["wallpaper", "video"]
+dependencies = ["phonto", "ffmpeg"]

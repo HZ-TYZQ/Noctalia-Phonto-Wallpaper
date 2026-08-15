@@ -1,0 +1,42 @@
+{
+  "all_outputs": "Tüm Çıkışlar",
+  "empty": "Belirlenen dizinde video bulunamadı",
+  "not_installed": "phonto yüklü değil",
+  "output": "Çıkış",
+  "pause": "Durdur",
+  "resume": "Devam et",
+  "settings": {
+    "allowed_cpus": {
+      "label": "İzin verilen CPUlar"
+    },
+    "cpu_quota": {
+      "label": "CPU Kotası"
+    },
+    "cpu_weight": {
+      "label": "CPU Ağırlığı"
+    },
+    "extract_last_frame": {
+      "description": "Oynatma durdurulduğunda, videodan otomatik olarak bir kare ayıklanarak sabit duvar kağıdı olarak kullan.",
+      "label": "Statik yedek kare"
+    },
+    "glyph": {
+      "label": "Glif"
+    },
+    "memory_max": {
+      "label": "Max Hafıza"
+    },
+    "nice": {
+      "label": "Nice değeri"
+    },
+    "run_as_systemd": {
+      "description": "Sıkı kaynak sınırlamalarını uygulamak için duvar kağıdını bir systemd geçici kapsamında çalıştır.",
+      "label": "Systemd servisi olarak çalıştır"
+    },
+    "video_directory": {
+      "description": "Duvar kağıdı videoları için taranacak klasör. Boş olduğunda varsayılan olarak ~/Videos.",
+      "label": "Video dizini"
+    }
+  },
+  "stop": "Kapat",
+  "title": "Phonto Video Duvar Kağıdı"
+}
