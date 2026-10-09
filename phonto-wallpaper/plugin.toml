@@ -1,7 +1,8 @@
-# Phonto video wallpaper. A headless [[service]] supervises one phonto instance
-# per output (or one instance covering all outputs). The [[panel]] is a per-output video
-# picker; the bar [[widget]] and the control center [[shortcut]] open it. When a video
-# is assigned to an output, the service asks the host to drop its own wallpaper surface there
+# Phonto video wallpaper. A headless [[service]] supervises a single phonto process
+# covering every assigned output (one video mirrored, or a different video per output
+# via repeated --display). The [[panel]] is a per-output video picker; the bar
+# [[widget]] and the control center [[shortcut]] open it. When a video is assigned to
+# an output, the service asks the host to drop its own wallpaper surface there
 # (noctalia.setWallpaperEnabled) so the phonto surface shows through; clearing the
 # video restores it.
 #
@@ -9,7 +10,7 @@
 
 id = "tyzq/phonto-wallpaper"
 name = "Phonto Video Wallpaper"
-version = "0.2.0"
+version = "0.3.0"
 plugin_api = 9
 author = "tyzq"
 license = "MIT"

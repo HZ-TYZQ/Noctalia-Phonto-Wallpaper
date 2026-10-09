@@ -40,12 +40,12 @@ Assignments persist across restarts. Supported files: `mp4`, `webm`, `mkv`, `mov
 
 ## IPC Commands
 
-You can control the video wallpaper externally via Noctalia's IPC mechanism. Replace `[connector]` with your display name (e.g. `eDP-1`), or omit it to target all monitors:
+You can control the video wallpaper externally via Noctalia's IPC mechanism. Replace `<connector>` with your display name (e.g. `eDP-1`). One phonto process serves every output, so pause/resume/toggle always act on all of them (a `[connector]` argument is accepted but ignored):
 
-- `noctalia msg plugin tyzq/phonto-wallpaper:service all pause [connector]` - Pauses playback via SIGSTOP (or the cgroups freezer in systemd mode).
-- `noctalia msg plugin tyzq/phonto-wallpaper:service all resume [connector]` - Resumes playback.
-- `noctalia msg plugin tyzq/phonto-wallpaper:service all toggle [connector]` - Toggles playback between paused and resumed state.
-- `noctalia msg plugin tyzq/phonto-wallpaper:service all clear <connector>` - Stops the wallpaper on the specified monitor and extracts a frame as a static wallpaper.
+- `noctalia msg plugin tyzq/phonto-wallpaper:service all pause` - Pauses playback on every output via SIGSTOP (or the cgroups freezer in systemd mode).
+- `noctalia msg plugin tyzq/phonto-wallpaper:service all resume` - Resumes playback.
+- `noctalia msg plugin tyzq/phonto-wallpaper:service all toggle` - Toggles playback between paused and resumed state.
+- `noctalia msg plugin tyzq/phonto-wallpaper:service all clear <connector>` - Stops the wallpaper on the specified monitor and extracts a frame as a static wallpaper. With an **All outputs** wallpaper, the other present monitors keep the video as their own assignments (monitors plugged in later no longer get it).
 - `noctalia msg plugin tyzq/phonto-wallpaper:service all clear-all` - Stops all active video wallpapers.
 - `noctalia msg plugin tyzq/phonto-wallpaper:service all reapply` - Re-applies the last applied wallpaper, relaunching phonto; also force-restarts a running one or revives a dead one. Made for lock/unlock hooks: clear-all on lock, reapply on unlock.
 
@@ -54,8 +54,8 @@ You can control the video wallpaper externally via Noctalia's IPC mechanism. Rep
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `video_directory` | `folder` | *(empty)* | Folder scanned for wallpaper videos; defaults to `~/Videos` when empty. |
-| `run_as_systemd` | `bool` | `false` | Runs instances inside systemd transient scopes (`systemd-run`) for resource control. |
-| `extract_last_frame` | `bool` | `true` | Extracts a static frame to use as a wallpaper when video playback is stopped or paused. |
+| `run_as_systemd` | `bool` | `false` | Runs phonto inside a systemd transient scope (`phonto.scope`) for resource control. |
+| `extract_last_frame` | `bool` | `true` | Extracts a static frame to use as a wallpaper when video playback is stopped. Pausing keeps the rendered frame in place. |
 | `cpu_quota` | `number` | `0` | Systemd `CPUQuota=` limit in percentage. Requires `run_as_systemd`. |
 | `allowed_cpus` | `string` | *(empty)* | Systemd `AllowedCPUs=` limits (e.g., `0-3`). Requires `run_as_systemd`. |
 | `memory_max` | `string` | *(empty)* | Systemd `MemoryMax=` limits (e.g., `500M`). Requires `run_as_systemd`. |
@@ -65,16 +65,34 @@ You can control the video wallpaper externally via Noctalia's IPC mechanism. Rep
 
 ## How it works
 
-A headless service supervises `phonto` instances, either launching them directly
-or wrapping them in systemd transient scopes (`systemd-run`) for strict CPU and
-memory resource limits. `phonto VIDEO` applies the video to every output;
-`phonto --display OUTPUT VIDEO` pins it to one output. When a video is assigned,
-the service first shows the cached thumbnail as the Noctalia wallpaper (so themes
-follow it and there is no black screen), then hides the host wallpaper layer once
-phonto is up. The picker panel, bar widget, and control center shortcut are thin clients that drive the
-service through the plugin's shared state. When the plugin is disabled or
-Noctalia exits, the service's `onExit` hook terminates every running `phonto`
-instance — including frozen or paused ones — so no orphan processes remain.
+A headless service supervises a single `phonto` process for all outputs, either
+launching it directly or wrapping it in a systemd transient scope (`phonto.scope`)
+for strict CPU and memory resource limits (which then apply to all outputs
+combined). With **All outputs**, it runs `phonto VIDEO`, which mirrors the video
+and attaches monitors plugged in later; with per-output videos, it runs
+`phonto --display A VIDEO_A --display B VIDEO_B ...` for the outputs that are
+present, so different videos on several monitors still cost one process.
+
+phonto cannot be reconfigured while running, so assigning, stopping, or
+plugging/unplugging an assigned output restarts the process: every covered output
+shows its cached thumbnail as the Noctalia wallpaper meanwhile, or keeps the
+current host wallpaper if no thumbnail is cached. The host wallpaper layer is
+hidden again once phonto passes the startup liveness check.
+A restart also resumes a paused wallpaper; a pause requested while
+phonto (re)starts is applied once it is up.
+
+The service checks that phonto is still running 0.8 s after a launch and every
+few seconds afterwards. If it failed to start (e.g. an unplayable video) or died,
+Noctalia's own wallpaper comes back and a notification points to phonto's output
+in `~/.local/state/noctalia/phonto/phonto.log`. The assignments are kept, so
+picking the video again or `reapply` retries.
+This checks process liveness, not whether the compositor has displayed the first
+frame; a running but stalled renderer cannot be detected by this check.
+
+The picker panel, bar widget, and control center shortcut are thin clients that
+drive the service through the plugin's shared state. When the plugin is disabled or
+Noctalia exits, the service's `onExit` hook terminates the `phonto` process —
+even a frozen or paused one — so no orphan remains.
 
 ## License
 

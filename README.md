@@ -25,6 +25,33 @@ Then enable **Phonto Video Wallpaper** and configure its **Video directory**.
 See [phonto-wallpaper/README.md](phonto-wallpaper/README.md) for usage, IPC
 commands, and settings.
 
+## Tests
+
+```sh
+tests/run.sh            # service logic + real-process tests (~15 s, no monitor needed)
+tests/run.sh --phonto   # also checks the real phonto binary in this session
+```
+
+- `tests/service_sim.lua` runs `phonto_service.luau` against simulated outputs and
+  a model process table, so multi-monitor behavior (hotplug, per-output videos in
+  one process, bursts of changes, upgrades from the per-output layout) is covered
+  on any machine.
+- `tests/service_shell.lua` executes the service's real shell commands with a
+  stand-in `phonto` binary (`tests/fake_phonto.c`): quoting of odd file names,
+  pkill patterns against real `/proc` command lines, signals, `nice`, and systemd
+  scopes (under a throwaway unit name, never the real `phonto.scope`).
+- `tests/phonto_contract.sh` (`--phonto`) checks the phonto behaviors the service
+  relies on, with the real binary on one monitor, and prints a memory estimate.
+  It briefly draws a test pattern at the background layer.
+
+Checks labeled `#1`–`#6` are regression tests for the issues in
+[docs/known_issues.md](docs/known_issues.md).
+
+Requires `luajit`, `ffmpeg`, `gcc`, and procps; the systemd checks run when
+`systemd-run --user --scope` works. The tests load the service with LuaJIT, so
+it must stay free of Luau-only syntax (`+=`, type annotations).
+`TEST_VERBOSE=1` prints every check and command.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Derived from the official Noctalia
