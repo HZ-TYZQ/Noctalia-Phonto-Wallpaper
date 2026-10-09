@@ -15,6 +15,7 @@ local STATE_DIR = (noctalia.getenv("XDG_STATE_HOME") or ((noctalia.getenv("HOME"
 local STATE_FILE = STATE_DIR .. "/assignments.json"
 
 local assignments = {}  -- Map of connector -> video path ("*" for all outputs)
+local lastAssignments = {} -- Map of connector -> video path last applied (feeds IPC "reapply")
 local launchedAsSystemd = {} -- Map of connector -> boolean (true if launched as systemd)
 local lastPresent = {}  -- Map of connector -> true (monitors seen last tick)
 local isPaused = {}     -- Map of connector -> true (paused monitors)
@@ -84,6 +85,7 @@ local function persist()
   noctalia.runAsync("mkdir -p " .. shellQuote(STATE_DIR))
   noctalia.writeFile(STATE_FILE, noctalia.json.encode({
     assignments = assignments,
+    lastAssignments = lastAssignments,
     launchedAsSystemd = launchedAsSystemd
   }) or "")
 end
@@ -95,6 +97,7 @@ local function loadAssignments()
     if type(decoded) == "table" then
       if decoded.assignments then
         assignments = decoded.assignments
+        lastAssignments = decoded.lastAssignments or {}
         launchedAsSystemd = decoded.launchedAsSystemd or {}
       else
         assignments = decoded
@@ -291,10 +294,20 @@ end
 -- ── CORE ASSIGNMENT LOGIC ──────────────────────────────────────────────────
 -- ==============================================================================
 
+-- Remembers the live assignments as the "last applied" set for the IPC
+-- "reapply" verb. Skipped when empty so repeated clears never overwrite it.
+-- The copy matters: clearVideo mutates `assignments` in place.
+local function snapshotAssignments()
+  if next(assignments) == nil then return end
+  lastAssignments = {}
+  for k, v in pairs(assignments) do lastAssignments[k] = v end
+end
+
 -- Clears an assigned video and restores the host wallpaper.
 local function clearVideo(connector)
   if type(connector) ~= "string" or connector == "" then return end
   
+  snapshotAssignments()
   local path = assignments[connector]
   assignments[connector] = nil
   persist()
@@ -397,6 +410,7 @@ end
 
 function onIpc(event, payload)
   if event == "clear-all" then
+    snapshotAssignments()
     for connector, path in pairs(assignments) do
       killPhonto(connector, path, function()
         if path then 
@@ -412,6 +426,22 @@ function onIpc(event, payload)
 
   elseif event == "clear" then
     clearVideo(payload)
+
+  elseif event == "reapply" then
+    if not available then
+      noctalia.log("phonto: reapply requested but phonto is not installed")
+      return
+    end
+    -- Nothing currently assigned (e.g. a lock hook ran clear-all): restore the
+    -- last applied set. Copy, never alias — `assignments` is mutated in place
+    -- elsewhere (picker apply) and must not corrupt the snapshot.
+    if next(assignments) == nil then
+      assignments = {}
+      for k, v in pairs(lastAssignments) do assignments[k] = v end
+      persist()
+    end
+    applyAll()
+    publish()
 
   elseif event == "pause" or event == "freeze" then
     if type(payload) == "string" and payload ~= "" then
